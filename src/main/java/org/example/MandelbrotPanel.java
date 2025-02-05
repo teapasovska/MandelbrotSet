@@ -27,8 +27,9 @@ public class MandelbrotPanel extends JPanel {
     }
 
     private void drawMandelbrotSet() {
-        long startTime = System.currentTimeMillis();  //start time
-        // loop through each pixel in the image
+        long startTime = System.currentTimeMillis();  // Start time
+
+        // Identified parallelizable section -> convert to parallel processing
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 double zx = (x - width / 2) / (0.5 * zoom * width) + offsetX;
@@ -38,7 +39,7 @@ public class MandelbrotPanel extends JPanel {
             }
         }
 
-        long endTime = System.currentTimeMillis();  //end time
+        long endTime = System.currentTimeMillis();  // End time
 
         long runtime = endTime - startTime;
         System.out.println("Mandelbrot set computed in " + runtime + " ms.");
