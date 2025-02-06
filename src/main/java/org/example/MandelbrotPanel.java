@@ -29,20 +29,16 @@ public class MandelbrotPanel extends JPanel {
     private void drawMandelbrotSet() {
         long startTime = System.currentTimeMillis();  // Start time
 
-        // Identified parallelizable section -> convert to parallel processing
+        // Introduce MandelbrotWorker class to handle row computation in separate threads
         for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                double zx = (x - width / 2) / (0.5 * zoom * width) + offsetX;
-                double zy = (y - height / 2) / (0.5 * zoom * height) + offsetY;
-                int color = MandelbrotSequential.computeColor(zx, zy);
-                image.setRGB(x, y, color);
-            }
+            Thread worker = new MandelbrotWorker(x, width, height, zoom, offsetX, offsetY, image);
+            worker.start();
         }
 
         long endTime = System.currentTimeMillis();  // End time
 
         long runtime = endTime - startTime;
-        System.out.println("Mandelbrot set computed in " + runtime + " ms.");
+        System.out.println("Mandelbrot set computation initiated in parallel: " + runtime + " ms.");
     }
 
     @Override
@@ -78,5 +74,38 @@ public class MandelbrotPanel extends JPanel {
 
     public double getZoom() {
         return zoom;
+    }
+}
+
+// new class
+class MandelbrotWorker extends Thread {
+    private int x;
+    private int width;
+    private int height;
+    private double zoom;
+    private double offsetX;
+    private double offsetY;
+    private BufferedImage image;
+
+    public MandelbrotWorker(int x, int width, int height, double zoom, double offsetX, double offsetY, BufferedImage image) {
+        this.x = x;
+        this.width = width;
+        this.height = height;
+        this.zoom = zoom;
+        this.offsetX = offsetX;
+        this.offsetY = offsetY;
+        this.image = image;
+    }
+
+    @Override
+    public void run() {
+        for (int y = 0; y < height; y++) {
+            double zx = (x - width / 2) / (0.5 * zoom * width) + offsetX;
+            double zy = (y - height / 2) / (0.5 * zoom * height) + offsetY;
+            int color = MandelbrotSequential.computeColor(zx, zy);
+            synchronized (image) {
+                image.setRGB(x, y, color);
+            }
+        }
     }
 }
