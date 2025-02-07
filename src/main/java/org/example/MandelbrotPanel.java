@@ -3,6 +3,9 @@ package org.example;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class MandelbrotPanel extends JPanel {
 
@@ -29,16 +32,24 @@ public class MandelbrotPanel extends JPanel {
     private void drawMandelbrotSet() {
         long startTime = System.currentTimeMillis();  // Start time
 
-        // Introduce MandelbrotWorker class to handle row computation in separate threads
-        for (int x = 0; x < width; x++) {
-            Thread worker = new MandelbrotWorker(x, width, height, zoom, offsetX, offsetY, image);
-            worker.start();
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+        for (int y = 0; y < height; y++) {
+            executor.execute(new MandelbrotWorker(y, width, height, zoom, offsetX, offsetY, image));
+        }
+
+        executor.shutdown();
+        try {
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
         long endTime = System.currentTimeMillis();  // End time
 
         long runtime = endTime - startTime;
-        System.out.println("Mandelbrot set computation initiated in parallel: " + runtime + " ms.");
+        System.out.println("Mandelbrot set computed in " + runtime + " ms.");
+        repaint();
     }
 
     @Override
@@ -69,7 +80,6 @@ public class MandelbrotPanel extends JPanel {
 
     public void redraw() {
         drawMandelbrotSet();
-        repaint();
     }
 
     public double getZoom() {
@@ -77,9 +87,9 @@ public class MandelbrotPanel extends JPanel {
     }
 }
 
-// new class
-class MandelbrotWorker extends Thread {
-    private int x;
+// Updated MandelbrotWorker to compute row-wise
+class MandelbrotWorker implements Runnable {
+    private int y;
     private int width;
     private int height;
     private double zoom;
@@ -87,8 +97,8 @@ class MandelbrotWorker extends Thread {
     private double offsetY;
     private BufferedImage image;
 
-    public MandelbrotWorker(int x, int width, int height, double zoom, double offsetX, double offsetY, BufferedImage image) {
-        this.x = x;
+    public MandelbrotWorker(int y, int width, int height, double zoom, double offsetX, double offsetY, BufferedImage image) {
+        this.y = y;
         this.width = width;
         this.height = height;
         this.zoom = zoom;
@@ -99,7 +109,7 @@ class MandelbrotWorker extends Thread {
 
     @Override
     public void run() {
-        for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
             double zx = (x - width / 2) / (0.5 * zoom * width) + offsetX;
             double zy = (y - height / 2) / (0.5 * zoom * height) + offsetY;
             int color = MandelbrotSequential.computeColor(zx, zy);
