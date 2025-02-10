@@ -17,6 +17,7 @@ public class MandelbrotPanel extends JPanel {
     private double zoom = 1.0;
     private double offsetX = -0.5;
     private double offsetY = 0.0;
+    private static final int ROW_BLOCK_SIZE = 10; // Process multiple rows per thread
 
     public MandelbrotPanel(int width, int height) {
         this.width = width;
@@ -34,8 +35,10 @@ public class MandelbrotPanel extends JPanel {
 
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-        for (int y = 0; y < height; y++) {
-            executor.execute(new MandelbrotWorker(y, width, height, zoom, offsetX, offsetY, image));
+        for (int y = 0; y < height; y += ROW_BLOCK_SIZE) {
+            int startRow = y;
+            int endRow = Math.min(y + ROW_BLOCK_SIZE, height);
+            executor.execute(new MandelbrotWorker(startRow, endRow, width, height, zoom, offsetX, offsetY, image));
         }
 
         executor.shutdown();
@@ -87,9 +90,10 @@ public class MandelbrotPanel extends JPanel {
     }
 }
 
-// Updated MandelbrotWorker to compute row-wise
+// Updated MandelbrotWorker to process row blocks instead of single rows
 class MandelbrotWorker implements Runnable {
-    private int y;
+    private int startRow;
+    private int endRow;
     private int width;
     private int height;
     private double zoom;
@@ -97,8 +101,9 @@ class MandelbrotWorker implements Runnable {
     private double offsetY;
     private BufferedImage image;
 
-    public MandelbrotWorker(int y, int width, int height, double zoom, double offsetX, double offsetY, BufferedImage image) {
-        this.y = y;
+    public MandelbrotWorker(int startRow, int endRow, int width, int height, double zoom, double offsetX, double offsetY, BufferedImage image) {
+        this.startRow = startRow;
+        this.endRow = endRow;
         this.width = width;
         this.height = height;
         this.zoom = zoom;
@@ -109,13 +114,14 @@ class MandelbrotWorker implements Runnable {
 
     @Override
     public void run() {
-        for (int x = 0; x < width; x++) {
-            double zx = (x - width / 2) / (0.5 * zoom * width) + offsetX;
-            double zy = (y - height / 2) / (0.5 * zoom * height) + offsetY;
-            int color = MandelbrotSequential.computeColor(zx, zy);
-            synchronized (image) {
-                image.setRGB(x, y, color);
+        int[] rowBuffer = new int[width];
+        for (int y = startRow; y < endRow; y++) {
+            for (int x = 0; x < width; x++) {
+                double zx = (x - width / 2) / (0.5 * zoom * width) + offsetX;
+                double zy = (y - height / 2) / (0.5 * zoom * height) + offsetY;
+                rowBuffer[x] = MandelbrotSequential.computeColor(zx, zy);
             }
+            image.setRGB(0, y, width, 1, rowBuffer, 0, width);
         }
     }
 }
