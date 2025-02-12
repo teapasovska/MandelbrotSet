@@ -31,29 +31,41 @@ public class MandelbrotPanel extends JPanel {
     }
 
     private void drawMandelbrotSet() {
-        long startTime = System.currentTimeMillis();  // Start time
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() {
+                long startTime = System.currentTimeMillis();
+                ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+                for (int y = 0; y < height; y += ROW_BLOCK_SIZE) {
+                    int startRow = y;
+                    int endRow = Math.min(y + ROW_BLOCK_SIZE, height);
+                    executor.execute(new MandelbrotWorker(startRow, endRow, width, height, zoom, offsetX, offsetY, image));
+                }
 
-        for (int y = 0; y < height; y += ROW_BLOCK_SIZE) {
-            int startRow = y;
-            int endRow = Math.min(y + ROW_BLOCK_SIZE, height);
-            executor.execute(new MandelbrotWorker(startRow, endRow, width, height, zoom, offsetX, offsetY, image));
-        }
+                executor.shutdown();
+                try {
+                    if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                        executor.shutdownNow();
+                    }
+                } catch (InterruptedException e) {
+                    executor.shutdownNow();
+                    Thread.currentThread().interrupt();
+                }
 
-        executor.shutdown();
-        try {
-            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+                long endTime = System.currentTimeMillis();
+                System.out.println("Mandelbrot set computed in " + (endTime - startTime) + " ms.");
+                return null;
+            }
 
-        long endTime = System.currentTimeMillis();  // End time
-
-        long runtime = endTime - startTime;
-        System.out.println("Mandelbrot set computed in " + runtime + " ms.");
-        repaint();
+            @Override
+            protected void done() {
+                repaint();
+            }
+        };
+        worker.execute();
     }
+
 
     @Override
     protected void paintComponent(Graphics g) {
