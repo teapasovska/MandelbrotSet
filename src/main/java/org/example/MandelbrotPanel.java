@@ -17,7 +17,7 @@ public class MandelbrotPanel extends JPanel {
     private double zoom = 1.0;
     private double offsetX = -0.5;
     private double offsetY = 0.0;
-    private static final int ROW_BLOCK_SIZE = 10; // Process multiple rows per thread
+    private static final int ROW_BLOCK_SIZE = 20; // Process multiple rows per thread, optimized block size for performance
 
     public MandelbrotPanel(int width, int height) {
         this.width = width;
@@ -35,7 +35,8 @@ public class MandelbrotPanel extends JPanel {
             @Override
             protected Void doInBackground() {
                 long startTime = System.currentTimeMillis();
-                ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+                int availableThreads = Runtime.getRuntime().availableProcessors();
+                ExecutorService executor = Executors.newFixedThreadPool(availableThreads * 2); //Increased parallelism
 
                 for (int y = 0; y < height; y += ROW_BLOCK_SIZE) {
                     int startRow = y;
@@ -45,7 +46,7 @@ public class MandelbrotPanel extends JPanel {
 
                 executor.shutdown();
                 try {
-                    if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                    if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
                         executor.shutdownNow();
                     }
                 } catch (InterruptedException e) {
