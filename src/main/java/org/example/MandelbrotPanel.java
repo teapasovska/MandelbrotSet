@@ -30,12 +30,14 @@ public class MandelbrotPanel extends JPanel {
         drawMandelbrotSet();
     }
 
+    //computing and rendering the mandelbrot set using multithreading
     private void drawMandelbrotSet() {
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() {
                 long startTime = System.currentTimeMillis();
                 int availableThreads = Runtime.getRuntime().availableProcessors();
+                //executorservice to distribute workload across CPU cores
                 ExecutorService executor = Executors.newFixedThreadPool(availableThreads * 2); //Increased parallelism
 
                 for (int y = 0; y < height; y += ROW_BLOCK_SIZE) {
@@ -103,7 +105,7 @@ public class MandelbrotPanel extends JPanel {
     }
 }
 
-// Updated MandelbrotWorker to process row blocks instead of single rows
+// Updated MandelbrotWorker to process row blocks instead of single rows for computing the mandelbrot set
 class MandelbrotWorker implements Runnable {
     private int startRow;
     private int endRow;
@@ -114,6 +116,8 @@ class MandelbrotWorker implements Runnable {
     private double offsetY;
     private BufferedImage image;
 
+
+    //constructing mandelbrot worker for a specific block of rows
     public MandelbrotWorker(int startRow, int endRow, int width, int height, double zoom, double offsetX, double offsetY, BufferedImage image) {
         this.startRow = startRow;
         this.endRow = endRow;
