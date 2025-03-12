@@ -54,6 +54,20 @@ public class MandelbrotMPI {
             }
         }
         System.out.println("Process" + rank+ " finished computation for rows: " + startRow+ " to " + endRow);
+
+
+        //colecting pixel data
+        int[] fullimage = null;
+
+        if (rank == 0){
+            fullimage = new int[width*height];
+        }
+        System.out.println("Process" + rank+ " sending data");
+        MPI.COMM_WORLD.Gather(localPixels, 0, localPixels.length, MPI.INT, fullimage, 0, localPixels.length, MPI.INT, 0);
+
+        if (rank == 0){
+            System.out.println("Received data");
+        }
         MPI.Finalize();
     }
 }
