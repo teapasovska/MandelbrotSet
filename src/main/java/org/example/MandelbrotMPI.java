@@ -32,18 +32,31 @@ public class MandelbrotMPI {
         int rank = MPI.COMM_WORLD.Rank();
         int size = MPI.COMM_WORLD.Size();
 
-        int rowsPerProcess = 100;
-        int startRow = rowsPerProcess * rank;
-        int endRow = startRow + rowsPerProcess;
+        if (args.length < 2){
+            if (rank == 0){
+                System.err.println("Width and height must be provided as arguments");
+            }
+            MPI.Finalize();
+            return;
+        }
+
+        int width = Integer.parseInt(args[0]);
+        int height = Integer.parseInt(args[1]);
+        System.out.println("Process "+rank+" received width=" + width + " and height=" + height);
+
+        int rowsPerProcess = height/size;
+        int extraRows= height%size;
+        int startRow = rank * rowsPerProcess + Math.min(rank, extraRows);
+        int endRow = startRow + rowsPerProcess + (rank<extraRows?1:0);
 
         //System.out.println("Process " + rank + " started...");
         //System.out.println("Process " + rank + " got assigned rows " + startRow + " to " + endRow);
         //System.out.println("Process " + rank + " waiting for next step...");
 
-        int width = 800, height = 600;
-        int[] localPixels = new int[rowsPerProcess * width];
+//        int width = 800, height = 600;
+        int[] localPixels = new int[(endRow-startRow)*width];
 
-        System.out.println("Process" + rank+ " started computation");
+        System.out.println("Process" + rank+ " computing rows "+ startRow+" to "+endRow);
 
 
         for (int y = startRow; y < endRow; y++){

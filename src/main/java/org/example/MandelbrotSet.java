@@ -49,12 +49,21 @@ public class MandelbrotSet {
                 contentPanel.add(heightField, gbc);
 
                 // start button
-                JButton startButton = new JButton("Start Mandelbrot");
-                startButton.setFont(new Font("Arial", Font.BOLD, 14));
-                startButton.setBackground(new Color(135, 206, 250));
-                startButton.setForeground(Color.WHITE);
-                startButton.setFocusPainted(false);
-                startButton.setBorder(BorderFactory.createCompoundBorder(
+                JButton parallelButton = new JButton("Start Mandelbrot in parallel");
+                parallelButton.setFont(new Font("Arial", Font.BOLD, 14));
+                parallelButton.setBackground(new Color(135, 206, 250));
+                parallelButton.setForeground(Color.WHITE);
+                parallelButton.setFocusPainted(false);
+                parallelButton.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(Color.WHITE, 2),
+                        BorderFactory.createEmptyBorder(5, 10, 5, 10)));
+
+                JButton distributedButton = new JButton("Start Mandelbrot in distributed");
+                distributedButton.setFont(new Font("Arial", Font.BOLD, 14));
+                distributedButton.setBackground(new Color(135, 206, 250));
+                distributedButton.setForeground(Color.WHITE);
+                distributedButton.setFocusPainted(false);
+                distributedButton.setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createLineBorder(Color.WHITE, 2),
                         BorderFactory.createEmptyBorder(5, 10, 5, 10)));
 
@@ -62,12 +71,15 @@ public class MandelbrotSet {
                 gbc.gridy = 2;
                 gbc.gridwidth = 2;
                 gbc.anchor = GridBagConstraints.CENTER;
-                contentPanel.add(startButton, gbc);
+                contentPanel.add(parallelButton, gbc);
+
+                gbc.gridy = 3;
+                contentPanel.add(distributedButton, gbc);
 
                 setupFrame.add(contentPanel);
                 setupFrame.setVisible(true);
 
-                startButton.addActionListener(new ActionListener() {
+                parallelButton.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         try {
@@ -82,49 +94,80 @@ public class MandelbrotSet {
                             }
 
                             setupFrame.dispose();
-
-                            // mandelbrot frame
-                            JFrame frame = new JFrame("Mandelbrot Set - Sequential Implementation");
-                            f = frame;
-
-                            MandelbrotPanel panel = new MandelbrotPanel(width, height);
-                            p = panel;
-                            f.add(p);
-                            f.setSize(width, height);
-                            f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-
-                            f.setResizable(false);
-
-                            f.setLocationRelativeTo(null);
-
-                            f.setVisible(true);
-
-                            // key listener for interactive controls
-                            f.addKeyListener(new java.awt.event.KeyAdapter() {
-                                public void keyPressed(KeyEvent e) {
-                                    if (e.getKeyCode() == KeyEvent.VK_UP)
-                                        p.setOffsetY(p.getOffsetY() - 0.1 / p.getZoom());
-                                    else if (e.getKeyCode() == KeyEvent.VK_DOWN)
-                                        p.setOffsetY(p.getOffsetY() + 0.1 / p.getZoom());
-                                    else if (e.getKeyCode() == KeyEvent.VK_LEFT)
-                                        p.setOffsetX(p.getOffsetX() - 0.1 / p.getZoom());
-                                    else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
-                                        p.setOffsetX(p.getOffsetX() + 0.1 / p.getZoom());
-                                    else if (e.getKeyCode() == KeyEvent.VK_PLUS || e.getKeyCode() == KeyEvent.VK_EQUALS) {
-                                        p.setZoom(p.getZoom() * 1.5);
-                                    } else if (e.getKeyCode() == KeyEvent.VK_MINUS)
-                                        p.setZoom(p.getZoom() / 1.5);
-                                    p.redraw();
-                                }
-                            });
+                            startParallel(width, height);
                         } catch (NumberFormatException ex) {
-                            // handle invalid input
-                            JOptionPane.showMessageDialog(setupFrame, "Please enter valid integer values for width and height.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(setupFrame, "Please enter a valid number.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                });
+
+                distributedButton.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        try {
+                            int width = Integer.parseInt(widthField.getText());
+                            int height = Integer.parseInt(heightField.getText());
+                            if (width <= 0 || height <= 0) {
+                                JOptionPane.showMessageDialog(setupFrame, "Width and height must be positive integers.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+                                return;
+                            }
+                            setupFrame.dispose();
+                            startDistributed(width, height);
+                        } catch (NumberFormatException ex) {
+                            JOptionPane.showMessageDialog(setupFrame, "Please enter a valid number.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
                         }
                     }
                 });
             }
         });
     }
+
+    private static void startParallel(int width, int height) {
+        // mandelbrot frame
+        JFrame frame = new JFrame("Mandelbrot Set - Parallel Implementation");
+        f = frame;
+
+        MandelbrotPanel panel = new MandelbrotPanel(width, height);
+        p = panel;
+        f.add(p);
+        f.setSize(width, height);
+        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+
+        f.setResizable(false);
+
+        f.setLocationRelativeTo(null);
+
+        f.setVisible(true);
+        // key listener for interactive controls
+        f.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_UP)
+                    p.setOffsetY(p.getOffsetY() - 0.1 / p.getZoom());
+                else if (e.getKeyCode() == KeyEvent.VK_DOWN)
+                    p.setOffsetY(p.getOffsetY() + 0.1 / p.getZoom());
+                else if (e.getKeyCode() == KeyEvent.VK_LEFT)
+                    p.setOffsetX(p.getOffsetX() - 0.1 / p.getZoom());
+                else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+                    p.setOffsetX(p.getOffsetX() + 0.1 / p.getZoom());
+                else if (e.getKeyCode() == KeyEvent.VK_PLUS || e.getKeyCode() == KeyEvent.VK_EQUALS) {
+                    p.setZoom(p.getZoom() * 1.5);
+                } else if (e.getKeyCode() == KeyEvent.VK_MINUS)
+                    p.setZoom(p.getZoom() / 1.5);
+                p.redraw();
+            }
+        });
+
+        System.out.println("Mandelbrot Set - Parallel Implementation started.");
+    }
+
+    private static void startDistributed(int width, int height) {
+        try {
+            String command = String.format("mpjrun.sh -np 4 -cp target/classes:$MPJ_HOME/lib/mpj.jar org.example.MandelbrotMPI %d %d", width, height);
+            Process process = Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", command});
+            System.out.println("Started Distributed Mandelbrot with width=" + width + " and height=" + height);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
+
