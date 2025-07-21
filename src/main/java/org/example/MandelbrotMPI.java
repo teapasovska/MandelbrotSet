@@ -27,12 +27,12 @@ public class MandelbrotMPI {
 
 
     public static void main(String[] args) {
-        MPI.Init(args);
+        String[] programArgs = MPI.Init(args);
 
         int rank = MPI.COMM_WORLD.Rank();
         int size = MPI.COMM_WORLD.Size();
 
-        if (args.length < 2){
+        if (programArgs.length < 2){
             if (rank == 0){
                 System.err.println("Width and height must be provided as arguments");
             }
@@ -40,8 +40,8 @@ public class MandelbrotMPI {
             return;
         }
 
-        int width = Integer.parseInt(args[0]);
-        int height = Integer.parseInt(args[1]);
+        int width = Integer.parseInt(programArgs[0]);
+        int height = Integer.parseInt(programArgs[1]);
         System.out.println("Process "+rank+" received width=" + width + " and height=" + height);
 
         int rowsPerProcess = height/size;
