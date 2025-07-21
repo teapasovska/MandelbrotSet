@@ -70,16 +70,32 @@ public class MandelbrotMPI {
 
 
         //colecting pixel data
-        int[] fullimage = null;
+        int[] fullImage = null;
+        int[] recvCounts = null;
+        int[] displs = null;
 
-        if (rank == 0){
-            fullimage = new int[width*height];
+        int localSize = localPixels.length;
+
+        if (rank == 0) {
+            fullImage = new int[width * height];
+            recvCounts = new int[size];
+            displs = new int[size];
+
+            for (int i = 0; i < size; i++) {
+                int rowsForThisRank = height / size + (i < height % size ? 1 : 0);
+                recvCounts[i] = rowsForThisRank * width;
+                displs[i] = (i == 0) ? 0 : displs[i - 1] + recvCounts[i - 1];
+            }
         }
-        System.out.println("Process" + rank+ " sending data");
-        MPI.COMM_WORLD.Gather(localPixels, 0, localPixels.length, MPI.INT, fullimage, 0, localPixels.length, MPI.INT, 0);
 
-        if (rank == 0){
-            System.out.println("Received data");
+        System.out.println("Process" + rank + " sending data");
+        MPI.COMM_WORLD.Gatherv(
+                localPixels, 0, localSize, MPI.INT,
+                fullImage, 0, recvCounts, displs, MPI.INT, 0
+        );
+
+        if (rank == 0) {
+            System.out.println("Received full image. First pixel: " + fullImage[0]);
         }
         MPI.Finalize();
     }
