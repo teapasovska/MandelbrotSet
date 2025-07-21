@@ -5,6 +5,9 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 public class MandelbrotSet {
     private static JFrame f;
@@ -163,7 +166,24 @@ public class MandelbrotSet {
     private static void startDistributed(int width, int height) {
         try {
             String command = String.format("mpjrun.sh -np 4 -cp target/classes:$MPJ_HOME/lib/mpj.jar org.example.MandelbrotMPI %d %d", width, height);
-            Process process = Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", command});
+            ProcessBuilder builder = new ProcessBuilder("/bin/bash", "-c", command);
+            builder.redirectErrorStream(true); // Merge stderr with stdout
+
+            Process process = builder.start();
+
+            // Read the output from the process and print it to the Java console
+            new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        System.out.println("[MPJ] " + line);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
+
             System.out.println("Started Distributed Mandelbrot with width=" + width + " and height=" + height);
         } catch (Exception e) {
             e.printStackTrace();
