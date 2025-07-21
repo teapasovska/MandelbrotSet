@@ -42,6 +42,9 @@ public class MandelbrotMPI {
 
         int width = Integer.parseInt(programArgs[0]);
         int height = Integer.parseInt(programArgs[1]);
+
+        long start = System.currentTimeMillis();
+
         System.out.println("Process "+rank+" received width=" + width + " and height=" + height);
 
         int rowsPerProcess = height/size;
@@ -96,6 +99,11 @@ public class MandelbrotMPI {
 
         if (rank == 0) {
             System.out.println("Received full image. First pixel: " + fullImage[0]);
+        }
+
+        long end = System.currentTimeMillis();
+        if (rank == 0) {
+            System.out.println("Distributed computation took " + (end - start) + " ms.");
         }
         MPI.Finalize();
     }
