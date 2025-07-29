@@ -165,13 +165,22 @@ public class MandelbrotSet {
 
     private static void startDistributed(int width, int height) {
         try {
-            String command = String.format("mpjrun.sh -np 4 -cp target/classes:$MPJ_HOME/lib/mpj.jar org.example.MandelbrotMPI %d %d", width, height);
+            // Get absolute project path (where 'mpj/' lives)
+            String projectRoot = System.getProperty("user.dir");
+            String mpjHome = projectRoot + "/mpj"; // bundled mpj folder
+            String classpath = String.format("%s/target/classes:%s/lib/mpj.jar", projectRoot, mpjHome);
+
+            String command = String.format(
+                    "MPJ_HOME=\"%s\" %s/bin/mpjrun.sh -np 4 -cp \"%s\" org.example.MandelbrotMPI %d %d",
+                    mpjHome, mpjHome, classpath, width, height
+            );
+
             ProcessBuilder builder = new ProcessBuilder("/bin/bash", "-c", command);
             builder.redirectErrorStream(true); // Merge stderr with stdout
 
             Process process = builder.start();
 
-            // Read the output from the process and print it to the Java console
+            // Read the output
             new Thread(() -> {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                     String line;
@@ -183,11 +192,12 @@ public class MandelbrotSet {
                 }
             }).start();
 
-
             System.out.println("Started Distributed Mandelbrot with width=" + width + " and height=" + height);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+
 }
 
